@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Thống kê tỷ giá";
+    var date = (DateTime)ViewBag.Date;
+    var average = ViewBag.AverageRate as decimal?;
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+
+<form method="get" asp-action="Statistics" class="row g-3 mb-4">
+    <div class="col-auto">
+        <label class="form-label">Ngày</label>
+        <input type="date" name="date" class="form-control" value="@date.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-auto d-flex align-items-end">
+        <button type="submit" class="btn btn-primary">Xem</button>
+    </div>
+</form>
+
+@if (!average.HasValue)
+{
+    <p class="text-muted">Không có dữ liệu tỷ giá cho ngày @date.ToString("dd/MM/yyyy").</p>
+}
+else
+{
+    <div class="card" style="max-width: 24rem;">
+        <div class="card-body">
+            <h5 class="card-title">Trung bình tỷ giá ngày @date.ToString("dd/MM/yyyy")</h5>
+            <p class="card-text display-6">@average.Value.ToString("N2")</p>
+        </div>
+    </div>
+}

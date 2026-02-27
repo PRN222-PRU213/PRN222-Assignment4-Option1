@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-PRN222_Assignment4_Option1.Worker-38b0c8f1-bbbf-44e5-90ab-0d36ffcef287</UserSecretsId>
+    <RootNamespace>PRN222_Assignment4_Option1.Worker</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PRN222-Assignment4-Option1.BusinessLogic\PRN222-Assignment4-Option1.BusinessLogic.csproj" />
+  </ItemGroup>
+</Project>

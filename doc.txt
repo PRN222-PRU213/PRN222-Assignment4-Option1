@@ -1,0 +1,34 @@
+Assignment 04: (option 1) 
+Exchange Rate Monitoring System (MVC + Worker Service) 
+Mục tiêu bài assignment Sinh viên phải: 
+✓	Hiểu Worker Service trong .NET 
+✓	Triển khai BackgroundService 
+✓	Làm việc với EF Core 
+✓	Sử dụng Dependency Injection 
+✓	Sử dụng Logging & Configuration 
+✓	Tạo Web App theo MVC hoặc Razor Pages 
+ 
+Tổng quan hệ thống 
+Nhóm phải xây dựng: 
+Ứng dụng 	Công nghệ 	Vai trò 
+ASP.NET Core MVC hoặc Razor 
+ Web Application 	Hiển thị dữ liệu 
+Pages 
+ Worker Service 	.NET Worker Service 	Tự động sinh dữ liệu định kỳ 
+ 
+Bối cảnh bài toán 
+Xây dựng hệ thống theo dõi tỷ giá ngoại tệ. 
+Worker Service sẽ: 
+✓	Mỗi 05 giây tạo tỷ giá ngẫu nhiên 
+✓	Lưu vào database 
+✓	Ghi log 
+✓	Hỗ trợ dừng bằng CancellationToken Web App sẽ: 
+✓	Hiển thị danh sách tỷ giá 
+✓	Lọc theo ngày 
+✓	Xem tỷ giá mới nhất 
+✓	Hiển thị dữ liệu ✓ Refresh dữ liệu 
+✓	Hiển thị trạng thái Worker 
+✓	Có background task riêng (ví dụ auto refresh) 
+
+
+Ghi chú: lấy API tỷ giá cung cấp sẵn
