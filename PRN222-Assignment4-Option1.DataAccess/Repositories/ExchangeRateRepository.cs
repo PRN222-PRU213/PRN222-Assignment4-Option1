@@ -19,6 +19,12 @@ public class ExchangeRateRepository : IExchangeRateRepository
         await _context.SaveChangesAsync(ct);
     }
 
+    public async Task AddRangeAsync(IEnumerable<ExchangeRate> entities, CancellationToken ct = default)
+    {
+        await _context.ExchangeRates.AddRangeAsync(entities, ct);
+        await _context.SaveChangesAsync(ct);
+    }
+
     public async Task<List<ExchangeRate>> GetByDateAsync(DateTime date, CancellationToken ct = default)
     {
         var start = date.Date;
@@ -36,17 +42,39 @@ public class ExchangeRateRepository : IExchangeRateRepository
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<List<ExchangeRate>> GetAllAsync(DateTime? date, int skip, int take, CancellationToken ct = default)
+    public async Task<List<ExchangeRate>> GetAllAsync(DateTime? startDate, DateTime? endDate, string? baseCurrency, string? targetCurrencies, int skip, int take, CancellationToken ct = default)
     {
         var query = _context.ExchangeRates.AsQueryable();
-        if (date.HasValue)
+
+        if (startDate.HasValue)
         {
-            var start = date.Value.Date;
-            var end = start.AddDays(1);
-            query = query.Where(e => e.CreatedAt >= start && e.CreatedAt < end);
+            var start = startDate.Value.Date;
+            query = query.Where(e => e.Timestamp >= start);
         }
+
+        if (endDate.HasValue)
+        {
+            var end = endDate.Value.Date.AddDays(1);
+            query = query.Where(e => e.Timestamp < end);
+        }
+
+        if (!string.IsNullOrWhiteSpace(baseCurrency))
+        {
+            query = query.Where(e => e.BaseCurrency == baseCurrency.Trim());
+        }
+
+        if (!string.IsNullOrWhiteSpace(targetCurrencies))
+        {
+            var symbols = targetCurrencies.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (symbols.Length > 0)
+            {
+                query = query.Where(e => symbols.Contains(e.TargetCurrency));
+            }
+        }
+
         return await query
-            .OrderByDescending(e => e.CreatedAt)
+            .OrderByDescending(e => e.Timestamp)
+            .ThenByDescending(e => e.Id)
             .Skip(skip)
             .Take(take)
             .ToListAsync(ct);

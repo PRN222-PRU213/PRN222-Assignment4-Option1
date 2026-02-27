@@ -23,68 +23,28 @@ public class ExchangeRateController : Controller
     }
 
     public async Task<IActionResult> Index(
-        DateTime? date,
+        DateTime? startDate,
+        DateTime? endDate,
+        string? baseCurrency,
+        string? symbols,
         int page = 1,
-        DateTime? apiDate = null,
-        string? apiBase = null,
-        string? apiSymbols = null,
         CancellationToken ct = default)
     {
         var skip = (page - 1) * PageSize;
-        var list = await _exchangeRateService.GetListAsync(date, skip, PageSize + 1, ct);
+        var list = await _exchangeRateService.GetListAsync(startDate, endDate, baseCurrency, symbols, skip, PageSize + 1, ct);
         var hasNextPage = list.Count > PageSize;
         if (hasNextPage)
             list = list.Take(PageSize).ToList();
 
-        ViewBag.DateFilter = date;
+        ViewBag.StartDate = startDate;
+        ViewBag.EndDate = endDate;
+        ViewBag.BaseCurrency = baseCurrency;
+        ViewBag.Symbols = symbols;
         ViewBag.Page = page;
         ViewBag.HasNextPage = hasNextPage;
         ViewBag.HasPrevPage = page > 1;
         ViewBag.IsWorkerRunning = _workerControlService.IsRunning;
         ViewBag.WorkerStatusMessage = TempData["WorkerStatusMessage"];
-
-        // Nếu người dùng cung cấp bất kỳ giá trị filter API nào (ngày/base/symbols),
-        // thì gọi Frankfurter API và hiển thị kết quả trên cùng trang.
-        var hasApiFilter = apiDate.HasValue
-                           || !string.IsNullOrWhiteSpace(apiBase)
-                           || !string.IsNullOrWhiteSpace(apiSymbols);
-
-        FrankfurterHistoricalResponse? apiResponse = null;
-        DateTime? apiSelectedDate = null;
-
-        if (hasApiFilter)
-        {
-            apiSelectedDate = apiDate ?? DateTime.Today;
-            var baseCurNormalized = string.IsNullOrWhiteSpace(apiBase)
-                ? null
-                : apiBase.Trim().ToUpperInvariant();
-            var symbolsNormalized = string.IsNullOrWhiteSpace(apiSymbols)
-                ? null
-                : apiSymbols.Trim().ToUpperInvariant();
-
-            try
-            {
-                apiResponse = await _exchangeRateApiService.GetHistoricalRatesAsync(
-                    apiSelectedDate.Value,
-                    baseCurNormalized,
-                    symbolsNormalized,
-                    ct);
-            }
-            catch (OperationCanceledException)
-            {
-                // client hủy request → bỏ qua.
-            }
-
-            ViewBag.ApiHasFilter = true;
-            ViewBag.ApiDate = apiSelectedDate;
-            ViewBag.ApiBaseInput = apiBase;
-            ViewBag.ApiSymbolsInput = apiSymbols;
-            ViewBag.ApiResponse = apiResponse;
-        }
-        else
-        {
-            ViewBag.ApiHasFilter = false;
-        }
 
         return View(list);
     }

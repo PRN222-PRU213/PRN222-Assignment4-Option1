@@ -13,6 +13,11 @@ public interface IExchangeRateApiService
     Task<HexaRateData?> GetRandomRateAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// Lấy toàn bộ tỷ giá mới nhất từ API (/v1/latest).
+    /// </summary>
+    Task<List<HexaRateData>> GetLatestRatesAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Lấy tỷ giá lịch sử linh hoạt theo tài liệu Frankfurter:
     /// - Chỉ ngày:          /v1/{date}
     /// - Ngày + base:       /v1/{date}?base=USD
@@ -20,6 +25,11 @@ public interface IExchangeRateApiService
     /// Trả về toàn bộ rates trong ngày (có thể nhiều mã).
     /// </summary>
     Task<FrankfurterHistoricalResponse?> GetHistoricalRatesAsync(DateTime date, string? baseCurrency, string? symbols, CancellationToken ct = default);
+
+    /// <summary>
+    /// Lấy tỷ giá trong một khoảng thời gian: /v1/{start_date}..{end_date}?base={baseCurrency}
+    /// </summary>
+    Task<FrankfurterRangeResponse?> GetRangeRatesAsync(DateTime startDate, DateTime? endDate, string? baseCurrency, CancellationToken ct = default);
 }
 
 public sealed class ExchangeRateApiService : IExchangeRateApiService
@@ -93,6 +103,30 @@ public sealed class ExchangeRateApiService : IExchangeRateApiService
         };
     }
 
+    public async Task<List<HexaRateData>> GetLatestRatesAsync(CancellationToken ct = default)
+    {
+        // Frankfurter: /v1/latest -> mặc định base=EUR
+        var response = await _httpClient.GetFromJsonAsync<FrankfurterLatestResponse>("v1/latest", ct);
+        if (response is null || response.Rates is null)
+        {
+            return new List<HexaRateData>();
+        }
+
+        var result = new List<HexaRateData>();
+        foreach (var kv in response.Rates)
+        {
+            result.Add(new HexaRateData
+            {
+                Base = response.Base,
+                Target = kv.Key,
+                Mid = kv.Value,
+                Unit = 1,
+                Timestamp = response.Date
+            });
+        }
+        return result;
+    }
+
     public async Task<FrankfurterHistoricalResponse?> GetHistoricalRatesAsync(DateTime date, string? baseCurrency, string? symbols, CancellationToken ct = default)
     {
         var dateString = date.ToString("yyyy-MM-dd");
@@ -125,6 +159,28 @@ public sealed class ExchangeRateApiService : IExchangeRateApiService
             return null;
         }
 
+        return response;
+    }
+
+    public async Task<FrankfurterRangeResponse?> GetRangeRatesAsync(DateTime startDate, DateTime? endDate, string? baseCurrency, CancellationToken ct = default)
+    {
+        var startStr = startDate.ToString("yyyy-MM-dd");
+        var path = endDate.HasValue 
+            ? $"v1/{startStr}..{endDate.Value.ToString("yyyy-MM-dd")}"
+            : $"v1/{startStr}..";
+
+        if (!string.IsNullOrWhiteSpace(baseCurrency))
+        {
+            path += $"?base={baseCurrency}";
+        }
+
+        using var httpResponse = await _httpClient.GetAsync(path, ct);
+        if (!httpResponse.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        var response = await httpResponse.Content.ReadFromJsonAsync<FrankfurterRangeResponse>(cancellationToken: ct);
         return response;
     }
 }

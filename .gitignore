@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Custom: Ignore all .txt files (including logs and build info)
+*.txt
+
+# Custom: Ensure license files in library folders are tracked
+!wwwroot/lib/**/LICENSE.txt
+

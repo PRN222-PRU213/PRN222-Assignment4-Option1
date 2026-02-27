@@ -12,8 +12,8 @@ using PRN222_Assignment4_Option1.DataAccess.Data;
 namespace PRN222_Assignment4_Option1.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260226080600_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260227095157_initialdatabase")]
+    partial class initialdatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

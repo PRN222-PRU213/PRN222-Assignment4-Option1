@@ -27,7 +27,7 @@ else
             <h5 class="card-title mb-0">@Model.BaseCurrency / @Model.TargetCurrency</h5>
         </div>
         <div class="card-body">
-            <p class="card-text display-5 mb-2">@Model.Rate.ToString("N2")</p>
+            <p class="card-text display-5 mb-2">@Model.Rate.ToString("N4")</p>
             <p class="text-muted small mb-0">Cập nhật: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</p>
             <a asp-controller="ExchangeRate" asp-action="Index" class="btn btn-outline-primary btn-sm mt-3">Xem danh sách đầy đủ</a>
         </div>
