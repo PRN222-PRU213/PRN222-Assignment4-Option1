@@ -8,10 +8,19 @@
     var baseCurrency = ViewBag.BaseCurrency as string;
     var symbols = ViewBag.Symbols as string;
     var currentPage = (int)ViewBag.Page;
-    var hasNext = (bool)ViewBag.HasNextPage;
-    var hasPrev = (bool)ViewBag.HasPrevPage;
+    var totalPages = (int)ViewBag.TotalPages;
+    var totalCount = (int)ViewBag.TotalCount;
     var isWorkerRunning = ViewBag.IsWorkerRunning is bool b && b;
     var workerStatusMessage = ViewBag.WorkerStatusMessage as string;
+
+    // Pagination logic
+    int maxDisplayedPages = 5;
+    int startPage = Math.Max(1, currentPage - (maxDisplayedPages / 2));
+    int endPage = Math.Min(totalPages, startPage + maxDisplayedPages - 1);
+    if (endPage - startPage + 1 < maxDisplayedPages)
+    {
+        startPage = Math.Max(1, endPage - maxDisplayedPages + 1);
+    }
 }
 
 @section Scripts {
@@ -175,33 +184,86 @@
                 </div>
             </div>
             <div class="card-footer bg-white py-3 border-0 d-flex align-items-center justify-content-between">
-                <p class="text-muted small mb-0">Trang <strong>@currentPage</strong></p>
+                <p class="text-muted small mb-0">
+                    Hiển thị trang <strong>@currentPage</strong> / <strong>@totalPages</strong> (Tổng cộng <strong>@totalCount</strong> bản ghi)
+                </p>
                 <nav>
-                    <ul class="pagination pagination-sm mb-0 gap-2">
-                        @if (hasPrev)
+                    <ul class="pagination pagination-sm mb-0">
+                        @if (currentPage > 1)
                         {
                             <li class="page-item">
-                                <a class="page-link rounded-pill px-3 shadow-none" asp-action="Index" 
+                                <a class="page-link shadow-none transition-all" asp-action="Index" 
+                                   asp-route-page="1" 
+                                   asp-route-startDate="@(startDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-endDate="@(endDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-baseCurrency="@baseCurrency"
+                                   asp-route-symbols="@symbols" title="Trang đầu">
+                                   <i class="bi bi-chevron-double-left fw-bold"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link shadow-none transition-all" asp-action="Index" 
                                    asp-route-page="@(currentPage - 1)" 
                                    asp-route-startDate="@(startDate?.ToString("yyyy-MM-dd"))"
                                    asp-route-endDate="@(endDate?.ToString("yyyy-MM-dd"))"
                                    asp-route-baseCurrency="@baseCurrency"
-                                   asp-route-symbols="@symbols">
-                                   <i class="bi bi-chevron-left"></i> Trang trước
+                                   asp-route-symbols="@symbols" title="Trang trước">
+                                   <i class="bi bi-chevron-left fw-bold"></i>
                                 </a>
                             </li>
                         }
-                        @if (hasNext)
+                        else
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link text-muted opacity-50"><i class="bi bi-chevron-double-left"></i></span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link text-muted opacity-50"><i class="bi bi-chevron-left"></i></span>
+                            </li>
+                        }
+
+                        @for (int i = startPage; i <= endPage; i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link shadow-none transition-all @(i == currentPage ? "fw-bold" : "")" asp-action="Index" 
+                                   asp-route-page="@i" 
+                                   asp-route-startDate="@(startDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-endDate="@(endDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-baseCurrency="@baseCurrency"
+                                   asp-route-symbols="@symbols">@i</a>
+                            </li>
+                        }
+
+                        @if (currentPage < totalPages)
                         {
                             <li class="page-item">
-                                <a class="page-link rounded-pill px-3 shadow-none" asp-action="Index" 
+                                <a class="page-link shadow-none transition-all" asp-action="Index" 
                                    asp-route-page="@(currentPage + 1)" 
                                    asp-route-startDate="@(startDate?.ToString("yyyy-MM-dd"))"
                                    asp-route-endDate="@(endDate?.ToString("yyyy-MM-dd"))"
                                    asp-route-baseCurrency="@baseCurrency"
-                                   asp-route-symbols="@symbols">
-                                   Trang sau <i class="bi bi-chevron-right"></i>
+                                   asp-route-symbols="@symbols" title="Trang sau">
+                                   <i class="bi bi-chevron-right fw-bold"></i>
                                 </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link shadow-none transition-all" asp-action="Index" 
+                                   asp-route-page="@totalPages" 
+                                   asp-route-startDate="@(startDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-endDate="@(endDate?.ToString("yyyy-MM-dd"))"
+                                   asp-route-baseCurrency="@baseCurrency"
+                                   asp-route-symbols="@symbols" title="Trang cuối">
+                                   <i class="bi bi-chevron-double-right fw-bold"></i>
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="page-item disabled">
+                                <span class="page-link text-muted opacity-50"><i class="bi bi-chevron-right"></i></span>
+                            </li>
+                            <li class="page-item disabled">
+                                <span class="page-link text-muted opacity-50"><i class="bi bi-chevron-double-right"></i></span>
                             </li>
                         }
                     </ul>
@@ -289,6 +351,35 @@
         0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
         70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
         100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .transition-all {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .page-link {
+        color: #4e73df;
+        border: 1px solid #dee2e6;
+        padding: 0.5rem 0.75rem;
+        min-width: 38px;
+        text-align: center;
+    }
+
+    .page-link:hover {
+        background-color: #f8f9fc;
+        color: #224abe;
+        z-index: 2;
+    }
+
+    .page-item.active .page-link {
+        background: var(--primary-gradient);
+        border-color: #4e73df;
+        color: white;
+    }
+
+    .page-item.disabled .page-link {
+        background-color: #fff;
+        border-color: #dee2e6;
+        color: #6c757d;
     }
 </style>
 

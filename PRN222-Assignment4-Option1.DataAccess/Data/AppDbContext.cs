@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<ExchangeRate> ExchangeRates { get; set; }
+    public DbSet<WorkerLog> WorkerLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,6 +22,13 @@ public class AppDbContext : DbContext
             entity.Property(e => e.TargetCurrency).HasMaxLength(3);
             entity.Property(e => e.Rate).HasPrecision(18, 6);
             entity.HasIndex(e => new { e.CreatedAt, e.BaseCurrency, e.TargetCurrency });
+        });
+
+        modelBuilder.Entity<WorkerLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.LogLevel).HasMaxLength(20);
+            entity.Property(e => e.Message).IsRequired();
         });
     }
 }

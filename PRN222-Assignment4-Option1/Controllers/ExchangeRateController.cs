@@ -10,16 +10,16 @@ public class ExchangeRateController : Controller
     private const int PageSize = 20;
     private readonly IExchangeRateService _exchangeRateService;
     private readonly IWorkerControlService _workerControlService;
-    private readonly IExchangeRateApiService _exchangeRateApiService;
+    private readonly IConfiguration _configuration;
 
     public ExchangeRateController(
         IExchangeRateService exchangeRateService,
         IWorkerControlService workerControlService,
-        IExchangeRateApiService exchangeRateApiService)
+        IConfiguration configuration)
     {
         _exchangeRateService = exchangeRateService;
         _workerControlService = workerControlService;
-        _exchangeRateApiService = exchangeRateApiService;
+        _configuration = configuration;
     }
 
     public async Task<IActionResult> Index(
@@ -31,22 +31,27 @@ public class ExchangeRateController : Controller
         CancellationToken ct = default)
     {
         var skip = (page - 1) * PageSize;
-        var list = await _exchangeRateService.GetListAsync(startDate, endDate, baseCurrency, symbols, skip, PageSize + 1, ct);
-        var hasNextPage = list.Count > PageSize;
-        if (hasNextPage)
-            list = list.Take(PageSize).ToList();
+        var pagedResult = await _exchangeRateService.GetListAsync(startDate, endDate, baseCurrency, symbols, skip, PageSize, ct);
+        
+        var totalPages = (int)Math.Ceiling((double)pagedResult.TotalCount / PageSize);
 
         ViewBag.StartDate = startDate;
         ViewBag.EndDate = endDate;
         ViewBag.BaseCurrency = baseCurrency;
         ViewBag.Symbols = symbols;
         ViewBag.Page = page;
-        ViewBag.HasNextPage = hasNextPage;
-        ViewBag.HasPrevPage = page > 1;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.TotalCount = pagedResult.TotalCount;
         ViewBag.IsWorkerRunning = _workerControlService.IsRunning;
         ViewBag.WorkerStatusMessage = TempData["WorkerStatusMessage"];
 
-        return View(list);
+        return View(pagedResult.Items);
+    }
+
+    public async Task<IActionResult> Latest(CancellationToken ct = default)
+    {
+        var latest = await _exchangeRateService.GetLatestAsync(ct);
+        return View(latest);
     }
 
     [HttpPost]
@@ -67,51 +72,12 @@ public class ExchangeRateController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    /// <summary>
-    /// Lọc tỷ giá trực tiếp từ Frankfurter API theo ngày, base và symbols
-    /// mà không dùng database. Hỗ trợ ba trường hợp:
-    /// - Chỉ ngày
-    /// - Ngày + base
-    /// - Ngày + base + symbols (1 hoặc nhiều mã, phân tách bởi dấu phẩy)
-    /// </summary>
-    public async Task<IActionResult> ApiFilter(DateTime? date, string? baseCurrency, string? symbols, CancellationToken ct = default)
+    public async Task<IActionResult> Logs(CancellationToken ct = default)
     {
-        var selectedDate = date ?? DateTime.Today;
-        var baseCurNormalized = string.IsNullOrWhiteSpace(baseCurrency)
-            ? null
-            : baseCurrency.Trim().ToUpperInvariant();
-        var symbolsNormalized = string.IsNullOrWhiteSpace(symbols)
-            ? null
-            : symbols.Trim().ToUpperInvariant();
-
-        FrankfurterHistoricalResponse? response = null;
-        try
-        {
-            response = await _exchangeRateApiService.GetHistoricalRatesAsync(
-                selectedDate,
-                baseCurNormalized,
-                symbolsNormalized,
-                ct);
-        }
-        catch (OperationCanceledException)
-        {
-            // Bị hủy bởi CancellationToken (client hủy request) → không coi là lỗi.
-        }
-
-        ViewBag.ApiDate = selectedDate;
-        ViewBag.ApiBaseInput = baseCurrency;      // giữ nguyên để hiển thị lại trong ô nhập
-        ViewBag.ApiSymbolsInput = symbols;
-        ViewBag.ApiBase = baseCurNormalized;
-        ViewBag.ApiSymbols = symbolsNormalized;
-        ViewBag.ApiResponse = response;
-
-        return View();
-    }
-
-    public async Task<IActionResult> Latest(CancellationToken ct = default)
-    {
-        var latest = await _exchangeRateService.GetLatestAsync(ct);
-        return View(latest);
+        var logs = await _exchangeRateService.GetWorkerLogsAsync(100, ct);
+        ViewBag.IsWorkerRunning = _workerControlService.IsRunning;
+        ViewBag.IntervalSeconds = _configuration.GetValue("ExchangeRate:IntervalSeconds", 5);
+        return View(logs);
     }
 
     public async Task<IActionResult> Statistics(DateTime? date, CancellationToken ct = default)

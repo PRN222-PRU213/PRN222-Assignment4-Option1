@@ -6,6 +6,7 @@
     <title>@ViewData["Title"] - Tỷ giá ngoại tệ</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/PRN222_Assignment4_Option1.styles.css" asp-append-version="true" />
 </head>
@@ -34,7 +35,7 @@
                             <a class="nav-link @(controller == "ExchangeRate" && action == "Statistics" ? "active fw-bold" : "text-dark")" asp-controller="ExchangeRate" asp-action="Statistics">Thống kê</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link @(controller == "ExchangeRate" && action == "ApiFilter" ? "active fw-bold" : "text-dark")" asp-controller="ExchangeRate" asp-action="ApiFilter">Lọc theo API</a>
+                            <a class="nav-link @(controller == "ExchangeRate" && action == "Logs" ? "active fw-bold" : "text-dark")" asp-controller="ExchangeRate" asp-action="Logs">Nhật ký</a>
                         </li>
                     </ul>
                 </div>

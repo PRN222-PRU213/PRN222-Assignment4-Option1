@@ -21,9 +21,16 @@ public sealed class ExchangeRateService : IExchangeRateService
         _logger = logger;
     }
 
-    public Task<List<ExchangeRate>> GetListAsync(DateTime? startDate, DateTime? endDate, string? baseCurrency, string? targetCurrencies, int skip, int take, CancellationToken ct = default)
+    public async Task<PagedResultDto<ExchangeRate>> GetListAsync(DateTime? startDate, DateTime? endDate, string? baseCurrency, string? targetCurrencies, int skip, int take, CancellationToken ct = default)
     {
-        return _repository.GetAllAsync(startDate, endDate, baseCurrency, targetCurrencies, skip, take, ct);
+        var items = await _repository.GetAllAsync(startDate, endDate, baseCurrency, targetCurrencies, skip, take, ct);
+        var totalCount = await _repository.GetCountAsync(startDate, endDate, baseCurrency, targetCurrencies, ct);
+
+        return new PagedResultDto<ExchangeRate>
+        {
+            Items = items,
+            TotalCount = totalCount
+        };
     }
 
     public Task<ExchangeRate?> GetLatestAsync(CancellationToken ct = default)
@@ -56,13 +63,14 @@ public sealed class ExchangeRateService : IExchangeRateService
         await _repository.AddAsync(entity, ct);
     }
 
-    public async Task FetchAndSaveRandomRateAsync(CancellationToken ct = default)
+    public async Task<ExchangeRate?> FetchAndSaveRandomRateAsync(CancellationToken ct = default)
     {
         var entity = await GenerateRandomRateAsync(ct);
         if (entity is null)
-            return;
+            return null;
 
         await _repository.AddAsync(entity, ct);
+        return entity;
     }
 
     public async Task<ExchangeRate?> GenerateRandomRateAsync(CancellationToken ct = default)
@@ -146,6 +154,32 @@ public sealed class ExchangeRateService : IExchangeRateService
             _logger.LogInformation("Saving {Count} range rates to database using bulk insert...", entities.Count);
             await _repository.AddRangeAsync(entities, ct);
         }
+    }
+
+    public Task<List<WorkerLog>> GetWorkerLogsAsync(int count, CancellationToken ct = default)
+    {
+        return _repository.GetWorkerLogsAsync(count, ct);
+    }
+
+    /// <summary>
+    /// Kiểm tra ngày hôm nay đã có dữ liệu từ API chưa.
+    /// Nếu chưa → gọi API lấy tỷ giá hôm nay và lưu vào DB.
+    /// Trả về true nếu đã lưu mới, false nếu đã có sẵn.
+    /// </summary>
+    public async Task<bool> SyncTodayFromApiIfNeededAsync(CancellationToken ct = default)
+    {
+        var today = DateTime.UtcNow.Date;
+        var hasData = await _repository.HasDataForDateAsync(today, ct);
+
+        if (hasData)
+        {
+            _logger.LogDebug("Today ({Date}) already has exchange rate data. Skipping API sync.", today.ToShortDateString());
+            return false;
+        }
+
+        _logger.LogInformation("No data found for today ({Date}). Fetching from API...", today.ToShortDateString());
+        await FetchAndSaveRangeRatesAsync(today, today, null, ct);
+        return true;
     }
 }
 
